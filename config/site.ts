@@ -1,18 +1,21 @@
+import { polygonMumbai } from "viem/chains"
+
 export type SiteConfig = typeof siteConfig
 
 export const siteConfig = {
-  name: "Next.js",
-  description:
-    "Beautifully designed components built with Radix UI and Tailwind CSS.",
+  name: "dao-organization" as const,
   mainNav: [
     {
       title: "Home",
       href: "/",
     },
+    {
+      title: "My Organizations",
+      href: "/organizations",
+    },
+    {
+      title: "My Roles",
+      href: "/roles",
+    },
   ],
-  links: {
-    twitter: "https://twitter.com/shadcn",
-    github: "https://github.com/shadcn/ui",
-    docs: "https://ui.shadcn.com",
-  },
 }
