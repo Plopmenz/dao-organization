@@ -87,7 +87,7 @@ export function CreateRole({
   return (
     <div>
       <h1 className="text-1xl font-extrabold leading-tight tracking-tighter md:text-2xl">
-        Grant a new permission
+        Create a new role
       </h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
