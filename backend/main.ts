@@ -4,9 +4,9 @@ import {
   createPublicClient,
   decodeAbiParameters,
   hexToString,
+  http,
   isAddress,
   parseAbiItem,
-  webSocket,
   zeroAddress,
 } from "viem"
 import { polygonMumbai } from "viem/chains"
@@ -41,7 +41,7 @@ const client = createPublicClient({
       },
     },
   },
-  transport: webSocket(),
+  transport: http(),
 })
 
 // Data
@@ -143,7 +143,13 @@ function prepareDAO(dao: Address, blockHash: `0x${string}`) {
 }
 
 // Event listining
+const watchEventOverrides = {
+  poll: true,
+  pollingInterval: 1_000,
+} as const
+
 const stopWatchingPluginInstallation = client.watchContractEvent({
+  ...watchEventOverrides,
   abi: OpenRD.contracts.PluginSetupProcessor.abi,
   address: OpenRD.contracts.PluginSetupProcessor.address,
   eventName: "InstallationPrepared",
@@ -188,6 +194,7 @@ async function processDAOMetadataLog(
 }
 function daoListener() {
   return client.watchContractEvent({
+    ...watchEventOverrides,
     abi: OpenRD.contracts.community_dao.abi,
     address: Object.keys(daos) as Address[],
     eventName: "MetadataSet",
@@ -204,6 +211,7 @@ function daoAdded() {
 function sharedAddressListener() {
   console.log("Listening to shared address now")
   return client.watchContractEvent({
+    ...watchEventOverrides,
     abi: OpenRD.contracts.SharedAddressImplementation.abi,
     address: Object.keys(sharedAddresses) as Address[],
     onLogs: (logs) => {
@@ -292,6 +300,7 @@ function sharedAddressesAdded() {
 function subDAOListener() {
   console.log("Listening to sub dao now")
   return client.watchContractEvent({
+    ...watchEventOverrides,
     abi: OpenRD.contracts.SubDAOImplementation.abi,
     address: Object.keys(subDaos) as Address[],
     onLogs: (logs) => {
@@ -309,6 +318,7 @@ function subDAOAdded() {
 console.log("Event listeners activated.")
 
 const stopWatchingHatCreation = client.watchContractEvent({
+  ...watchEventOverrides,
   abi: OpenRD.contracts.Hats.abi,
   address: OpenRD.contracts.Hats.address,
   eventName: "HatCreated",
@@ -365,6 +375,7 @@ function processHatTransfer(
   console.log(from, "transfered", amount, "of hat", id, "to", to)
 }
 const stopWatchingHatTransfers = client.watchContractEvent({
+  ...watchEventOverrides,
   abi: OpenRD.contracts.Hats.abi,
   address: OpenRD.contracts.Hats.address,
   eventName: "TransferSingle",
@@ -381,6 +392,7 @@ const stopWatchingHatTransfers = client.watchContractEvent({
   },
 })
 const stopWatchingHatBatchTransfers = client.watchContractEvent({
+  ...watchEventOverrides,
   abi: OpenRD.contracts.Hats.abi,
   address: OpenRD.contracts.Hats.address,
   eventName: "TransferBatch",
