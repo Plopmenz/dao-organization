@@ -3,18 +3,18 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Address } from "viem"
-import { usePublicClient } from "wagmi"
 
-import { DAOMetadata, getMetadata, getPlugins } from "@/lib/dao"
+import { getDAO } from "@/lib/backend"
+import { DAOMetadata } from "@/lib/types"
 import { CreateSubDAO } from "@/components/web3/create-subdao"
 import { GrantPermission } from "@/components/web3/grant-permission"
 import { SharedAddressDashboard } from "@/components/web3/sharedaddress-dashboard"
 import { SubDAODashboard } from "@/components/web3/subdao-dashboard"
 
 interface Plugins {
-  sharedAddress: Address
-  subDAO: Address
-  governance: Address
+  sharedAddress?: Address
+  subDAO?: Address
+  governance?: Address
 }
 
 export default function OrgnaizationPage({
@@ -23,22 +23,8 @@ export default function OrgnaizationPage({
   params: { address: Address }
 }) {
   const router = useRouter()
-  const publicClient = usePublicClient()
   const dao = params.address
-  const [plugins, setPlugins] = useState<Plugins | undefined>(undefined)
-  useEffect(() => {
-    const fetch = async () => {
-      const pluginAddresses = await getPlugins(dao, publicClient)
-      setPlugins({
-        sharedAddress: pluginAddresses[0],
-        subDAO: pluginAddresses[1],
-        governance: pluginAddresses[2],
-      })
-    }
-
-    fetch().catch(console.error)
-  }, [dao])
-
+  const [plugins, setPlugins] = useState<Plugins>({})
   const [metadata, setMetadata] = useState<DAOMetadata>({
     title: "Loading...",
     description: "Loading...",
@@ -46,8 +32,21 @@ export default function OrgnaizationPage({
 
   useEffect(() => {
     const fetch = async () => {
-      const DAOMetadata = await getMetadata(dao, publicClient)
-      setMetadata(DAOMetadata)
+      const daoData = await getDAO(dao)
+      setPlugins({
+        sharedAddress: daoData.sharedAddress,
+        subDAO: daoData.subDao,
+        governance: daoData.governance,
+      })
+
+      if (daoData.metadata) {
+        setMetadata(daoData.metadata)
+      } else {
+        setMetadata({
+          title: "Error",
+          description: "Could not load DAO metadata.",
+        })
+      }
     }
 
     fetch().catch(console.error)
@@ -61,14 +60,15 @@ export default function OrgnaizationPage({
       <p className="max-w-[700px] text-lg text-muted-foreground">
         {metadata.description}
       </p>
-      <SharedAddressDashboard sharedAddress={plugins?.sharedAddress} />
+      <SharedAddressDashboard sharedAddress={plugins.sharedAddress} />
       <GrantPermission
-        sharedAddress={plugins?.sharedAddress}
+        sharedAddress={plugins.sharedAddress}
         onGrant={() => router.refresh()}
       />
-      <SubDAODashboard subDAO={plugins?.subDAO} />
+      <SubDAODashboard subDAO={plugins.subDAO} />
       <CreateSubDAO
-        parentSubDAO={plugins?.subDAO}
+        parentDAO={dao}
+        parentSubDAO={plugins.subDAO}
         onCreate={(subDAO) => router.push("/organizations/" + subDAO)}
       />
     </section>

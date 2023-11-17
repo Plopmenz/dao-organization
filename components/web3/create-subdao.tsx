@@ -7,11 +7,7 @@ import { Address, stringToHex, zeroAddress } from "viem"
 import { useWaitForTransaction } from "wagmi"
 import * as z from "zod"
 
-import {
-  useAbstractAddress,
-  useAbstractTransaction,
-} from "@/lib/AbstractTransaction"
-import { DAOMetadata } from "@/lib/dao"
+import { useAbstractTransaction } from "@/lib/AbstractTransaction"
 import { getDAOAddress } from "@/lib/events"
 import { addToIpfs } from "@/lib/ipfs"
 import OpenRD from "@/lib/OpenR&D"
@@ -20,6 +16,7 @@ import {
   getSharedAddressSettings,
   getSubDAOSettings,
 } from "@/lib/plugin-settings"
+import { DAOMetadata } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -40,15 +37,19 @@ const formSchema = z.object({
 
 export function CreateSubDAO({
   onCreate,
+  parentDAO,
   parentSubDAO,
 }: {
   onCreate: (subdao: string) => void
+  parentDAO: Address | undefined
   parentSubDAO: Address | undefined
 }) {
-  const transactor = useAbstractAddress()
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+    },
   })
 
   const [prepared, setPrepared] = useState<boolean>(false)
@@ -81,11 +82,11 @@ export function CreateSubDAO({
     subdomain: "sub-org-" + Math.round(Math.random() * 1_000_000_000),
     metadata: stringToHex(ipfsMetadata),
   } as const
-  const pluginSettings = transactor
+  const pluginSettings = parentDAO
     ? [
         getSharedAddressSettings(),
         getSubDAOSettings(),
-        getAdminSettings(transactor),
+        getAdminSettings(parentDAO),
       ]
     : []
 
@@ -123,6 +124,7 @@ export function CreateSubDAO({
     !isError &&
     ipfsMetadata !== "" &&
     prepared &&
+    parentDAO &&
     parentSubDAO
   return (
     <div>

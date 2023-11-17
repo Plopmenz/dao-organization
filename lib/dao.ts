@@ -1,14 +1,11 @@
-import { Address, decodeEventLog, hexToString, Log, parseAbiItem } from "viem"
+import { Address, decodeEventLog, hexToString, parseAbiItem } from "viem"
 import { PublicClient } from "wagmi"
 
-import { getFromIpfs } from "./ipfs"
-import OpenRD from "./OpenR&D"
-import { blocknumber } from "./utils"
+import { getFromIpfs } from "@/lib/ipfs"
+import OpenRD from "@/lib/OpenR&D"
+import { DAOMetadata } from "@/lib/types"
+import { blocknumber } from "@/lib/utils"
 
-export interface DAOMetadata {
-  title: string
-  description: string
-}
 export async function getMetadata(
   dao: Address,
   publicClient: PublicClient
@@ -48,19 +45,10 @@ export async function getPlugins(
   return parsedLogs.map((l) => l.args.plugin)
 }
 
-export interface Organization {
-  address: Address
-  type: DAOType
-}
-export enum DAOType {
-  Parent,
-  Sub,
-  Unknown,
-}
 export async function getCreatedDAOs(
   creator: Address,
   publicClient: PublicClient
-): Promise<Organization[]> {
+): Promise<Address[]> {
   const eventAbi = parseAbiItem(
     "event DAORegistered(address indexed dao, address indexed creator, string subdomain)"
   )
@@ -74,14 +62,5 @@ export async function getCreatedDAOs(
   const parsedLogs = logs.map((l) =>
     decodeEventLog({ abi: [eventAbi], topics: l.topics, data: l.data })
   )
-  return parsedLogs.map((l) => {
-    return {
-      address: l.args.dao,
-      type: l.args.subdomain.startsWith("parent")
-        ? DAOType.Parent
-        : l.args.subdomain.startsWith("sub")
-        ? DAOType.Sub
-        : DAOType.Unknown,
-    }
-  })
+  return parsedLogs.map((l) => l.args.dao)
 }

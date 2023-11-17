@@ -11,7 +11,6 @@ import {
   useAbstractAddress,
   useAbstractTransaction,
 } from "@/lib/AbstractTransaction"
-import { DAOMetadata } from "@/lib/dao"
 import { getDAOAddress } from "@/lib/events"
 import { addToIpfs } from "@/lib/ipfs"
 import OpenRD from "@/lib/OpenR&D"
@@ -20,6 +19,7 @@ import {
   getSharedAddressSettings,
   getSubDAOSettings,
 } from "@/lib/plugin-settings"
+import { DAOMetadata } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -47,6 +47,10 @@ export function CreateOrganization({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+    },
   })
 
   const [prepared, setPrepared] = useState<boolean>(false)

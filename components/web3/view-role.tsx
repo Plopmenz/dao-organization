@@ -2,26 +2,19 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { usePublicClient } from "wagmi"
 
-import OpenRD from "@/lib/OpenR&D"
+import { getHat } from "@/lib/backend"
 
-export function ViewRole({ roleId }: { roleId: bigint }) {
-  const publicClient = usePublicClient()
+export function ViewRole({ roleId }: { roleId: string }) {
   const [hatInfo, setHatInfo] = useState<{ name: string }>({
     name: "Loading...",
   })
 
   useEffect(() => {
     const fetch = async () => {
-      const hatInfo = await publicClient.readContract({
-        abi: OpenRD.contracts.Hats.abi,
-        address: OpenRD.contracts.Hats.address,
-        functionName: "viewHat",
-        args: [roleId],
-      })
+      const hatInfo = await getHat(roleId)
 
-      setHatInfo({ name: hatInfo[0] })
+      setHatInfo({ name: hatInfo.name })
     }
 
     fetch().catch(console.error)

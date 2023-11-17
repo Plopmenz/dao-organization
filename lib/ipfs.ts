@@ -1,5 +1,6 @@
 import axios from "axios"
-import FormData from "form-data"
+
+const FormData = require("form-data")
 
 const IPFSUrl = "https://test.ipfs.aragon.network/api/v0" // https://prod.ipfs.aragon.network/
 const APIKey = "b477RhECf8s8sdM7XrkLBs2wHc4kCMwpbcFC55Kt" // Publicly known Aragon IPFS node API key

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { Address } from "viem"
 import { usePublicClient } from "wagmi"
 
-import { getPermissions, Permission } from "@/lib/sharedaddress"
+import { getSharedAddress } from "@/lib/backend"
+import { Permission } from "@/lib/types"
 import { ViewPermission } from "@/components/web3/view-permission"
 
 export function SharedAddressDashboard({
@@ -20,7 +21,8 @@ export function SharedAddressDashboard({
       if (!sharedAddress) {
         setPermissions([])
       } else {
-        setPermissions(await getPermissions(sharedAddress, publicClient))
+        const sharedAddressInfo = await getSharedAddress(sharedAddress)
+        setPermissions(sharedAddressInfo.permissions)
       }
     }
 

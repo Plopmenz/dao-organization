@@ -4,13 +4,12 @@ import { useEffect, useState } from "react"
 import { usePublicClient } from "wagmi"
 
 import { useAbstractAddress } from "@/lib/AbstractTransaction"
-import { getHats } from "@/lib/hats"
+import { getUser } from "@/lib/backend"
 import { ViewRole } from "@/components/web3/view-role"
 
 export function ViewRoles() {
   const transactor = useAbstractAddress()
-  const publicClient = usePublicClient()
-  const [roles, setRoles] = useState<bigint[]>([])
+  const [roles, setRoles] = useState<string[]>([])
 
   useEffect(() => {
     const fetch = async () => {
@@ -18,7 +17,8 @@ export function ViewRoles() {
         return
       }
 
-      setRoles(await getHats(transactor, publicClient))
+      const userInfo = await getUser(transactor)
+      setRoles(Object.keys(userInfo.hats))
     }
 
     fetch().catch(console.error)

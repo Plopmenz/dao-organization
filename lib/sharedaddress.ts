@@ -1,13 +1,8 @@
 import { Address, decodeEventLog, parseAbi } from "viem"
 import { PublicClient } from "wagmi"
 
-import { blocknumber } from "./utils"
-
-export interface Permission {
-  hat: bigint
-  zone?: Address
-  functionSelector?: string
-}
+import { Permission } from "@/lib/types"
+import { blocknumber } from "@/lib/utils"
 
 export async function getPermissions(
   sharedaddress: Address,

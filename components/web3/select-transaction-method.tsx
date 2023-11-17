@@ -1,16 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AxiosError } from "axios"
 import { Check, ChevronsUpDown } from "lucide-react"
-import { Address, useAccount, usePublicClient } from "wagmi"
+import { useAccount } from "wagmi"
 
 import {
   TransactionMethod,
   useTransactionMethod,
 } from "@/lib/AbstractTransaction"
-import { DAOMetadata, getCreatedDAOs, getMetadata, getPlugins } from "@/lib/dao"
-import OpenRD from "@/lib/OpenR&D"
-import { getPermissions } from "@/lib/sharedaddress"
+import { getDAO, getHat, getUser } from "@/lib/backend"
+import { UserData } from "@/lib/types"
 import { asyncMap, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,144 +26,111 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-interface DAO {
-  fromDAO?: DAO
-  address: Address
-  metadata: DAOMetadata
-}
-
-interface Method {
-  type: string
+interface SelectableTransactionMethod {
+  id: string
   method: TransactionMethod
-  dao: DAO
 }
 
 export function SelectTransactionMethod() {
   const account = useAccount()
-  const publicClient = usePublicClient()
   const [transactionMethods, setTransactionMethods] = useState<
-    {
-      id: string
-      method: TransactionMethod
-    }[]
+    SelectableTransactionMethod[]
   >([])
-  const [daos, setDaos] = useState<DAO[]>([])
+  const [transactionMethodSearchId, setTransactionMethodSearchId] = useState(0) // Increase for refresh
 
   const getTransactionMethods = async () => {
-    if (!account?.address) {
-      setDaos([])
-      setTransactionMethodSelected("")
-    } else {
-      const daoAddresses: DAO[] = []
-      const searchAddress = async (
-        fromDao: DAO | undefined,
-        address: Address
-      ) => {
-        const foundDaos = await getCreatedDAOs(address, publicClient)
-        await asyncMap(foundDaos, async (dao) => {
-          const daoMetadata = await getMetadata(dao.address, publicClient)
-          const newDAO = {
-            fromDAO: fromDao,
-            address: dao.address,
-            metadata: daoMetadata,
-          }
-          daoAddresses.push(newDAO)
-          await searchAddress(newDAO, dao.address)
+    setTransactionMethodSelected("")
+    setTransactionMethod({})
+    const foundTransactionMethods: SelectableTransactionMethod[] = []
 
-          // Search created SubDAOs
-          const plugins = await getPlugins(dao.address, publicClient)
-          await searchAddress(newDAO, plugins[1])
-        })
-      }
-      await searchAddress(undefined, account.address)
-      setDaos(daoAddresses)
+    const processUser = async (
+      user: UserData,
+      path: TransactionMethod | undefined,
+      prefix: string
+    ) => {
+      await Promise.all(
+        Object.keys(user.hats)
+          .map(async (hatId) => {
+            const hatInfo = await getHat(hatId)
+            await asyncMap(hatInfo.sharedaddress, async (sharedAddress) => {
+              const method: TransactionMethod = {
+                sharedAddress: {
+                  address: sharedAddress.plugin,
+                  hat: BigInt(hatId),
+                },
+                showAddress: sharedAddress.dao,
+                continue: path,
+              }
+              const daoInfo = await getDAO(sharedAddress.dao)
+              const newPrefix =
+                prefix + `${daoInfo.metadata?.title} (Role ${hatInfo.name}): `
+
+              foundTransactionMethods.push({
+                id: newPrefix.substring(0, newPrefix.length - 2),
+                method: method,
+              })
+
+              if (
+                !sharedAddress.access.zone &&
+                !sharedAddress.access.functionSelector
+              ) {
+                // Ideally should check in the process user if the role has access to the specific method of transacting
+                // For now only consider full access as such
+                await processUser(
+                  await getUser(sharedAddress.dao),
+                  method,
+                  newPrefix
+                )
+              }
+            })
+          })
+          .concat(
+            user.governance.map(async (governance) => {
+              const method: TransactionMethod = {
+                governance: governance.plugin,
+                showAddress: governance.dao,
+                continue: path,
+              }
+              const daoInfo = await getDAO(governance.dao)
+              const newPrefix =
+                prefix + `${daoInfo.metadata?.title} (Governance): `
+
+              foundTransactionMethods.push({
+                id: newPrefix.substring(0, newPrefix.length - 2),
+                method: method,
+              })
+
+              await processUser(
+                await getUser(governance.dao),
+                method,
+                newPrefix
+              )
+            })
+          )
+      )
     }
+
+    if (account?.address) {
+      let userData: UserData | undefined
+      try {
+        userData = await getUser(account.address)
+      } catch (err) {
+        // Likely users connected for the first time
+        // No records stored about this user yet
+        console.warn("User data could not be loaded", err)
+      }
+
+      if (userData) {
+        await processUser(userData, undefined, "")
+      }
+    }
+
+    setTransactionMethods(foundTransactionMethods)
   }
 
   useEffect(() => {
     getTransactionMethods().catch(console.error)
-  }, [account?.address])
-
-  useEffect(() => {
-    const fetch = async () => {
-      const methods: Method[] = []
-      await asyncMap(daos, async (dao) => {
-        const plugins = await getPlugins(dao.address, publicClient)
-        methods.push({
-          type: `Governance`,
-          method: { showAddress: dao.address, governance: plugins[2] },
-          dao: dao,
-        })
-
-        const permissions = await getPermissions(plugins[0], publicClient)
-        let hats = permissions.map((p) => p.hat)
-        hats = hats.filter((h, i) => hats.indexOf(h) == i) // Remove duplicates
-        await asyncMap(hats, async (h) => {
-          if (account?.address) {
-            const balance = await publicClient.readContract({
-              abi: OpenRD.contracts.Hats.abi,
-              address: OpenRD.contracts.Hats.address,
-              functionName: "balanceOf",
-              args: [account?.address, h],
-            })
-
-            if (balance > 0) {
-              const hatInfo = await publicClient.readContract({
-                abi: OpenRD.contracts.Hats.abi,
-                address: OpenRD.contracts.Hats.address,
-                functionName: "viewHat",
-                args: [h],
-              })
-
-              // Probably need to do an IPFS call here
-
-              methods.push({
-                type: `Role (${hatInfo[0]})`,
-                method: {
-                  showAddress: dao.address,
-                  sharedAddress: { address: plugins[0], hat: h },
-                },
-                dao: dao,
-              })
-            }
-          }
-        })
-      })
-
-      const processedMethods = methods.map((m) => {
-        let id = `${m.dao.metadata.title}: ${m.type}`
-        const method = { ...m.method }
-
-        if (m.type.startsWith("Role")) {
-          // Direct, currently doesnt check for DAOs with roles
-          return { id: id, method: method }
-        }
-
-        let fromDAO = m.dao.fromDAO
-        let nextMethod = method
-        while (fromDAO) {
-          // Ideally you would take all paths, but that is very messy in the UI
-          // Currently also only showing type of the last connection
-          const from = methods.find((m) => m.dao.address == fromDAO?.address)
-          if (from == undefined) {
-            throw new Error("Process path not found")
-          }
-          id = `${from.dao.metadata.title}: ${id}`
-          nextMethod.continue = {
-            ...from.method,
-          }
-          nextMethod = nextMethod.continue
-          fromDAO = fromDAO.fromDAO
-        }
-
-        return { id: id, method: method }
-      })
-
-      setTransactionMethods(processedMethods)
-    }
-
-    fetch().catch(console.error)
-  }, [daos])
+  }, [account?.address, transactionMethodSearchId])
 
   const [open, setOpen] = useState<boolean>(false)
   const [transactionMethodSelected, setTransactionMethodSelected] =
@@ -220,7 +187,9 @@ export function SelectTransactionMethod() {
         <Button
           className="w-full"
           variant="outline"
-          onClick={() => getTransactionMethods().catch(console.error)}
+          onClick={() =>
+            setTransactionMethodSearchId(transactionMethodSearchId + 1)
+          }
         >
           Refresh
         </Button>

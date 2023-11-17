@@ -34,3 +34,9 @@ yarn-error.log*
 
 .contentlayer
 .env
+
+# typescript compile
+lib/types.js
+lib/OpenR&D.js
+lib/ipfs.js
+backend/main.js

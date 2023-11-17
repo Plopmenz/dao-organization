@@ -12,7 +12,7 @@ import {
 } from "@/lib/AbstractTransaction"
 import { getHatID } from "@/lib/events"
 import OpenRD from "@/lib/OpenR&D"
-import { Permission } from "@/lib/sharedaddress"
+import { Permission } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -38,6 +38,9 @@ export function CreateRole({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+    },
   })
 
   const [prepared, setPrepared] = useState<boolean>(false)

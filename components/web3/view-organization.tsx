@@ -5,10 +5,10 @@ import Link from "next/link"
 import { Address } from "viem"
 import { usePublicClient } from "wagmi"
 
-import { DAOMetadata, getMetadata } from "@/lib/dao"
+import { getDAO } from "@/lib/backend"
+import { DAOMetadata } from "@/lib/types"
 
 export function ViewOrganization({ organization }: { organization: Address }) {
-  const publicClient = usePublicClient()
   const [metadata, setMetadata] = useState<DAOMetadata>({
     title: "Loading...",
     description: "Loading...",
@@ -16,7 +16,15 @@ export function ViewOrganization({ organization }: { organization: Address }) {
 
   useEffect(() => {
     const fetch = async () => {
-      setMetadata(await getMetadata(organization, publicClient))
+      const daoInfo = await getDAO(organization)
+      if (daoInfo.metadata) {
+        setMetadata(daoInfo.metadata)
+      } else {
+        setMetadata({
+          title: "Error",
+          description: "Could not fetch DAO metadata.",
+        })
+      }
     }
 
     fetch().catch(console.error)

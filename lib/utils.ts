@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const blocknumber = BigInt(41150000)
+export const blocknumber = BigInt(42473706)
 
 export async function asyncMap<T1, T2>(
   arr: T1[] | readonly T1[],

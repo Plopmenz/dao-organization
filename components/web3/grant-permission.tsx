@@ -9,7 +9,7 @@ import * as z from "zod"
 
 import { useAbstractTransaction } from "@/lib/AbstractTransaction"
 import OpenRD from "@/lib/OpenR&D"
-import { Permission } from "@/lib/sharedaddress"
+import { Permission } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -37,6 +37,11 @@ export function GrantPermission({
 }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      hat: "",
+      zone: "",
+      functionSelector: "",
+    },
   })
 
   const [prepared, setPrepared] = useState<boolean>(false)
@@ -56,10 +61,7 @@ export function GrantPermission({
   }
 
   useEffect(() => {
-    if (
-      formValues.functionSelector !== "" &&
-      formValues.functionSelector !== "undefined"
-    ) {
+    if (formValues.functionSelector !== "") {
       setTransactionInfo({
         functionName: "grantFullFunctionAccess",
         args: [
@@ -68,7 +70,7 @@ export function GrantPermission({
           formValues.functionSelector,
         ],
       })
-    } else if (formValues.zone !== "" && formValues.zone !== "undefined") {
+    } else if (formValues.zone !== "") {
       setTransactionInfo({
         functionName: "grantFullZoneAccess",
         args: [BigInt(formValues.hat), formValues.zone],

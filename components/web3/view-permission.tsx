@@ -3,25 +3,18 @@
 import { useEffect, useState } from "react"
 import { usePublicClient } from "wagmi"
 
-import OpenRD from "@/lib/OpenR&D"
-import { Permission } from "@/lib/sharedaddress"
+import { getHat } from "@/lib/backend"
+import { Permission } from "@/lib/types"
 
 export function ViewPermission({ permission }: { permission: Permission }) {
-  const publicClient = usePublicClient()
   const [hatInfo, setHatInfo] = useState<{ name: string }>({
     name: "Loading...",
   })
 
   useEffect(() => {
     const fetch = async () => {
-      const hatInfo = await publicClient.readContract({
-        abi: OpenRD.contracts.Hats.abi,
-        address: OpenRD.contracts.Hats.address,
-        functionName: "viewHat",
-        args: [permission.hat],
-      })
-
-      setHatInfo({ name: hatInfo[0] })
+      const hatInfo = await getHat(permission.hat)
+      setHatInfo({ name: hatInfo.name })
     }
 
     fetch().catch(console.error)
