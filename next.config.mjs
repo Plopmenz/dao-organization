@@ -3,7 +3,7 @@ const nextConfig = {
   rewrites: () => [
     {
       source: "/api/:call*",
-      destination: "https://dao-organization.plopmenz.com/api/:call*",
+      destination: "http://localhost:3001/api/:call*", //"https://dao-organization.plopmenz.com/api/:call*",
     },
   ],
   reactStrictMode: true,
