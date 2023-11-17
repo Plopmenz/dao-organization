@@ -4,9 +4,9 @@ import {
   createPublicClient,
   decodeAbiParameters,
   hexToString,
-  http,
   isAddress,
   parseAbiItem,
+  webSocket,
   zeroAddress,
 } from "viem"
 import { polygonMumbai } from "viem/chains"
@@ -41,7 +41,7 @@ const client = createPublicClient({
       },
     },
   },
-  transport: http(),
+  transport: webSocket(),
 })
 
 // Data
@@ -144,8 +144,8 @@ function prepareDAO(dao: Address, blockHash: `0x${string}`) {
 
 // Event listining
 const watchEventOverrides = {
-  poll: true,
-  pollingInterval: 1_000,
+  // poll: true,
+  // pollingInterval: 1_000,
 } as const
 
 function startWatchingPluginInstallation() {
