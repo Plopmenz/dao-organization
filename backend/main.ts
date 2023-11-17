@@ -148,32 +148,40 @@ const watchEventOverrides = {
   pollingInterval: 1_000,
 } as const
 
-const stopWatchingPluginInstallation = client.watchContractEvent({
-  ...watchEventOverrides,
-  abi: OpenRD.contracts.PluginSetupProcessor.abi,
-  address: OpenRD.contracts.PluginSetupProcessor.address,
-  eventName: "InstallationPrepared",
-  onLogs: async (logs) => {
-    if (!logs[0].args) {
-      return
-    }
+function startWatchingPluginInstallation() {
+  return client.watchContractEvent({
+    ...watchEventOverrides,
+    abi: OpenRD.contracts.PluginSetupProcessor.abi,
+    address: OpenRD.contracts.PluginSetupProcessor.address,
+    eventName: "InstallationPrepared",
+    onLogs: async (logs) => {
+      if (!logs[0].args) {
+        return
+      }
 
-    const {
-      args: { dao, pluginSetupRepo, plugin, data },
-      blockHash,
-    } = logs[0]
+      const {
+        args: { dao, pluginSetupRepo, plugin, data },
+        blockHash,
+      } = logs[0]
 
-    if (!dao || !pluginSetupRepo || !plugin || !data) {
-      return
-    }
+      if (!dao || !pluginSetupRepo || !plugin || !data) {
+        return
+      }
 
-    const repo = repos[pluginSetupRepo]
-    if (repo) {
-      prepareDAO(normalizeAddress(dao), blockHash)
-      repo.process(normalizeAddress(dao), normalizeAddress(plugin), data)
-    }
-  },
-})
+      const repo = repos[pluginSetupRepo]
+      if (repo) {
+        prepareDAO(normalizeAddress(dao), blockHash)
+        repo.process(normalizeAddress(dao), normalizeAddress(plugin), data)
+      }
+    },
+    onError: (err) => {
+      console.error("Watching plugin installation error: ", err)
+      stopWatchingPluginInstallation()
+      stopWatchingPluginInstallation = startWatchingPluginInstallation()
+    },
+  })
+}
+let stopWatchingPluginInstallation = startWatchingPluginInstallation()
 
 async function processDAOMetadataLog(
   logs: { args: { metadata?: `0x${string}` }; address: Address }[]
@@ -192,24 +200,29 @@ async function processDAOMetadataLog(
   daos[address].metadata = data
   console.log("DAO", address, "updated it's metadata to", data)
 }
-function daoListener() {
+function startWatchingDaos() {
   return client.watchContractEvent({
     ...watchEventOverrides,
     abi: OpenRD.contracts.community_dao.abi,
     address: Object.keys(daos) as Address[],
     eventName: "MetadataSet",
     onLogs: processDAOMetadataLog,
+    onError: (err) => {
+      console.error("Watching daos error: ", err)
+      stopWatchingDaos()
+      stopWatchingDaos = startWatchingDaos()
+    },
   })
 }
-let stopWatchingDaos = Object.keys(daos).length > 0 ? daoListener() : () => {}
+let stopWatchingDaos =
+  Object.keys(daos).length > 0 ? startWatchingDaos() : () => {}
 function daoAdded() {
   // Only needed when an address is newly added
   stopWatchingDaos()
-  stopWatchingDaos = daoListener()
+  stopWatchingDaos = startWatchingDaos()
 }
 
-function sharedAddressListener() {
-  console.log("Listening to shared address now")
+function startWatchingSharedAddress() {
   return client.watchContractEvent({
     ...watchEventOverrides,
     abi: OpenRD.contracts.SharedAddressImplementation.abi,
@@ -288,16 +301,23 @@ function sharedAddressListener() {
         }
       }
     },
+    onError: (err) => {
+      console.error("Watching shared address error: ", err)
+      stopWatchingSharedAddress()
+      stopWatchingSharedAddress = startWatchingSharedAddress()
+    },
   })
 }
 let stopWatchingSharedAddress =
-  Object.keys(sharedAddresses).length > 0 ? sharedAddressListener() : () => {}
+  Object.keys(sharedAddresses).length > 0
+    ? startWatchingSharedAddress()
+    : () => {}
 function sharedAddressesAdded() {
   stopWatchingSharedAddress()
-  stopWatchingSharedAddress = sharedAddressListener()
+  stopWatchingSharedAddress = startWatchingSharedAddress()
 }
 
-function subDAOListener() {
+function startWatchingSubDAO() {
   console.log("Listening to sub dao now")
   return client.watchContractEvent({
     ...watchEventOverrides,
@@ -307,38 +327,51 @@ function subDAOListener() {
       const { args, eventName, address } = logs[0]
       console.log("SubDAO at", address, "triggered", eventName)
     },
+    onError: (err) => {
+      console.error("Watching sub dao error: ", err)
+      stopWatchingSubDAO()
+      stopWatchingSubDAO = startWatchingSubDAO()
+    },
   })
 }
 let stopWatchingSubDAO =
-  Object.keys(subDaos).length > 0 ? subDAOListener() : () => {}
+  Object.keys(subDaos).length > 0 ? startWatchingSubDAO() : () => {}
 function subDAOAdded() {
   stopWatchingSubDAO()
-  stopWatchingSubDAO = subDAOListener()
+  stopWatchingSubDAO = startWatchingSubDAO()
 }
 console.log("Event listeners activated.")
 
-const stopWatchingHatCreation = client.watchContractEvent({
-  ...watchEventOverrides,
-  abi: OpenRD.contracts.Hats.abi,
-  address: OpenRD.contracts.Hats.address,
-  eventName: "HatCreated",
-  onLogs: async (logs) => {
-    if (!logs[0].args) {
-      return
-    }
+function startWatchingHatCreation() {
+  return client.watchContractEvent({
+    ...watchEventOverrides,
+    abi: OpenRD.contracts.Hats.abi,
+    address: OpenRD.contracts.Hats.address,
+    eventName: "HatCreated",
+    onLogs: async (logs) => {
+      if (!logs[0].args) {
+        return
+      }
 
-    const {
-      args: { id, details },
-    } = logs[0]
+      const {
+        args: { id, details },
+      } = logs[0]
 
-    if (!id || !details) {
-      return
-    }
+      if (!id || !details) {
+        return
+      }
 
-    hats[id.toString()] = { name: details, sharedaddress: [] }
-    console.log("New hat", details, "created with id", id)
-  },
-})
+      hats[id.toString()] = { name: details, sharedaddress: [] }
+      console.log("New hat", details, "created with id", id)
+    },
+    onError: (err) => {
+      console.error("Watching hat creation error: ", err)
+      stopWatchingHatCreation()
+      stopWatchingHatCreation = startWatchingHatCreation()
+    },
+  })
+}
+let stopWatchingHatCreation = startWatchingHatCreation()
 
 function processHatTransfer(
   from: Address,
@@ -374,51 +407,74 @@ function processHatTransfer(
   ).toString()
   console.log(from, "transfered", amount, "of hat", id, "to", to)
 }
-const stopWatchingHatTransfers = client.watchContractEvent({
-  ...watchEventOverrides,
-  abi: OpenRD.contracts.Hats.abi,
-  address: OpenRD.contracts.Hats.address,
-  eventName: "TransferSingle",
-  onLogs: async (logs) => {
-    const {
-      args: { from, to, id, amount },
-    } = logs[0]
 
-    if (!from || !to || !id || !amount) {
-      return
-    }
+function startWatchingHatTransfers() {
+  return client.watchContractEvent({
+    ...watchEventOverrides,
+    abi: OpenRD.contracts.Hats.abi,
+    address: OpenRD.contracts.Hats.address,
+    eventName: "TransferSingle",
+    onLogs: async (logs) => {
+      const {
+        args: { from, to, id, amount },
+      } = logs[0]
 
-    processHatTransfer(normalizeAddress(from), normalizeAddress(to), id, amount)
-  },
-})
-const stopWatchingHatBatchTransfers = client.watchContractEvent({
-  ...watchEventOverrides,
-  abi: OpenRD.contracts.Hats.abi,
-  address: OpenRD.contracts.Hats.address,
-  eventName: "TransferBatch",
-  onLogs: async (logs) => {
-    const {
-      args: { from, to, ids, amounts },
-    } = logs[0]
+      if (!from || !to || !id || !amount) {
+        return
+      }
 
-    if (!from || !to || !ids || !amounts) {
-      return
-    }
-
-    for (let i = 0; i < Math.min(ids.length, amounts.length); i++) {
       processHatTransfer(
         normalizeAddress(from),
         normalizeAddress(to),
-        ids[i],
-        amounts[i]
+        id,
+        amount
       )
-    }
-  },
-})
+    },
+    onError: (err) => {
+      console.error("Watching hat transfers error: ", err)
+      stopWatchingHatTransfers()
+      stopWatchingHatTransfers = startWatchingHatTransfers()
+    },
+  })
+}
+let stopWatchingHatTransfers = startWatchingHatTransfers()
+
+function startWatchingHatBatchTransfers() {
+  return client.watchContractEvent({
+    ...watchEventOverrides,
+    abi: OpenRD.contracts.Hats.abi,
+    address: OpenRD.contracts.Hats.address,
+    eventName: "TransferBatch",
+    onLogs: async (logs) => {
+      const {
+        args: { from, to, ids, amounts },
+      } = logs[0]
+
+      if (!from || !to || !ids || !amounts) {
+        return
+      }
+
+      for (let i = 0; i < Math.min(ids.length, amounts.length); i++) {
+        processHatTransfer(
+          normalizeAddress(from),
+          normalizeAddress(to),
+          ids[i],
+          amounts[i]
+        )
+      }
+    },
+    onError: (err) => {
+      console.error("Watching hat batch transfers error: ", err)
+      stopWatchingHatBatchTransfers()
+      stopWatchingHatBatchTransfers = startWatchingHatBatchTransfers()
+    },
+  })
+}
+let stopWatchingHatBatchTransfers = startWatchingHatBatchTransfers()
 
 function stop() {
-  stopWatchingDaos()
   stopWatchingPluginInstallation()
+  stopWatchingDaos()
   stopWatchingSharedAddress()
   stopWatchingSubDAO()
   stopWatchingHatCreation()
