@@ -19,7 +19,7 @@ export function WalletConnectSigner() {
 
   const [accounts, setAccounts] = useState<string[]>([])
   const [signClient, setSignClient] = useState<SignClientType | undefined>()
-  const [sessionTopic, setSessionTopic] = useState<string | undefined>()
+  const [sessionTopic, setSessionTopic] = useState<string[]>([])
 
   const getNamespaces = () => {
     return {
@@ -44,7 +44,7 @@ export function WalletConnectSigner() {
         id: event.id,
         namespaces: getNamespaces(),
       })
-      setSessionTopic(topic)
+      setSessionTopic(sessionTopic.concat([topic]))
     })
   }
 
@@ -57,7 +57,7 @@ export function WalletConnectSigner() {
         ) {
           // We cannot decide based on just address what transactionMethod / route the user wishes to take
           // However we could use "lastSelected" or something
-          // Ideally prompt the user which route they'd like to use
+          // Ideally prompt the user which route they'd like to use (show a list of incomming transaction with a dropdown for signer)
           console.warn(
             "Transaction request is for",
             event.params.request.params.from,
@@ -80,14 +80,45 @@ export function WalletConnectSigner() {
           transactionMethod,
           transactionRaw
         )
-        signer
-          ?.sendTransaction({
+        try {
+          const result = await signer?.sendTransaction({
             ...transactionData,
+            // Gas is increased if we do not use the EOA directly
             // gas: args.gas,
           })
-          .catch(console.error)
+          signClient.respond({
+            topic: event.topic,
+            response: { id: event.id, jsonrpc: "2.0", result: result },
+          })
+        } catch (err: any) {
+          console.error(err)
 
-        // add error / rejection of tranasctions
+          const USER_REJECTED_REQUEST_CODE = 4001
+          signClient.respond({
+            topic: event.topic,
+            response: {
+              id: event.id,
+              jsonrpc: "2.0",
+              error: {
+                code: USER_REJECTED_REQUEST_CODE, // Most likely "error"
+                message: err?.message ?? "Unknown error",
+              },
+            },
+          })
+        }
+      } else {
+        const INVALID_METHOD_ERROR_CODE = 1001
+        signClient.respond({
+          topic: event.topic,
+          response: {
+            id: event.id,
+            jsonrpc: "2.0",
+            error: {
+              code: INVALID_METHOD_ERROR_CODE,
+              message: "Method not supported.",
+            },
+          },
+        })
       }
     })
   }
@@ -95,9 +126,7 @@ export function WalletConnectSigner() {
   const setSessionDeleteHandler = (signClient: SignClientType) => {
     signClient.on("session_delete", async (event) => {
       console.log("session_delete", event)
-      if (event.topic === sessionTopic) {
-        setSessionTopic(undefined)
-      }
+      setSessionTopic(sessionTopic.filter((t) => t === event.topic))
     })
   }
 
@@ -154,11 +183,15 @@ export function WalletConnectSigner() {
     signClient.removeAllListeners("session_proposal")
     setSessionProposalHandler(signClient)
 
-    if (sessionTopic) {
+    for (let i = 0; i < sessionTopic.length; i++) {
       signClient
-        .update({
-          topic: sessionTopic,
-          namespaces: getNamespaces(),
+        .emit({
+          topic: sessionTopic[i],
+          event: {
+            name: "accountsChanged",
+            data: accounts,
+          },
+          chainId: `eip155:${OpenRD.chainId}`,
         })
         .catch(console.error)
     }
@@ -171,7 +204,7 @@ export function WalletConnectSigner() {
 
     signClient.removeAllListeners("session_request")
     setSessionRequestHandler(signClient)
-  }, [abstractTransaction, signClient])
+  }, [transactionMethod, signClient])
 
   useEffect(() => {
     if (!signClient) {
