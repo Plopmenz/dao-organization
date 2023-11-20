@@ -5,6 +5,8 @@ import { MainNav } from "@/components/main-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { SelectTransactionMethod } from "@/components/web3/select-transaction-method"
 
+import { WalletConnectSigner } from "./web3/walletconnect-signer"
+
 export function SiteHeader() {
   return (
     <header className="bg-background sticky top-0 z-40 w-full border-b">
@@ -13,6 +15,7 @@ export function SiteHeader() {
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
             <SelectTransactionMethod />
+            <WalletConnectSigner />
             <ThemeToggle />
             <ConnectButton />
           </nav>

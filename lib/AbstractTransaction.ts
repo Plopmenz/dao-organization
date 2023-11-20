@@ -34,7 +34,7 @@ export function useAbstractAddress() {
   return transactionMethod.showAddress ?? address
 }
 
-interface AbstractTransactionSettings {
+export interface AbstractTransactionSettings {
   abi: Abi
   address?: Address
   functionName?: any
@@ -100,6 +100,52 @@ export function useAbstractTransaction({
     args: args,
   })
   return contractWrite
+}
+
+export interface TransactionData {
+  to: Address
+  value: bigint
+  data: `0x${string}`
+}
+export function abstractTransaction(
+  transactionMethod: TransactionMethod,
+  transactionData: TransactionData
+): TransactionData {
+  let transaction = transactionData
+  let method: TransactionMethod | undefined = transactionMethod
+  while (method) {
+    if (method.sharedAddress && method.governance) {
+      throw new Error("Both shared address and governance set")
+    }
+
+    if (method.sharedAddress) {
+      transaction = {
+        to: method.sharedAddress.address,
+        value: BigInt(0), // or let the user pay?
+        data: encodeFunctionData({
+          abi: OpenRD.contracts.SharedAddressImplementation.abi,
+          functionName: "asDAO",
+          args: [method.sharedAddress.hat, [transaction], BigInt(0)],
+        }),
+      }
+    }
+
+    if (method.governance) {
+      transaction = {
+        to: method.governance,
+        value: BigInt(0), // or let the user pay?
+        data: encodeFunctionData({
+          abi: adminAbi,
+          functionName: "executeProposal",
+          args: ["0x", [transaction], BigInt(0)],
+        }),
+      }
+    }
+
+    method = method.continue
+  }
+
+  return transaction
 }
 
 const adminAbi = [

@@ -318,7 +318,6 @@ function sharedAddressesAdded() {
 }
 
 function startWatchingSubDAO() {
-  console.log("Listening to sub dao now")
   return client.watchContractEvent({
     ...watchEventOverrides,
     abi: OpenRD.contracts.SubDAOImplementation.abi,
@@ -340,7 +339,6 @@ function subDAOAdded() {
   stopWatchingSubDAO()
   stopWatchingSubDAO = startWatchingSubDAO()
 }
-console.log("Event listeners activated.")
 
 function startWatchingHatCreation() {
   return client.watchContractEvent({
@@ -471,6 +469,8 @@ function startWatchingHatBatchTransfers() {
   })
 }
 let stopWatchingHatBatchTransfers = startWatchingHatBatchTransfers()
+
+console.log("Event listeners activated.")
 
 function stop() {
   stopWatchingPluginInstallation()
