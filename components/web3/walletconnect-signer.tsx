@@ -40,11 +40,15 @@ export function WalletConnectSigner() {
   const setSessionProposalHandler = (signClient: SignClientType) => {
     signClient.on("session_proposal", async (event) => {
       console.log("session_proposal", event)
-      const { topic } = await signClient.approve({
+      const { acknowledged } = await signClient.approve({
         id: event.id,
         namespaces: getNamespaces(),
       })
-      setSessionTopic(sessionTopic.concat([topic]))
+
+      // Optionally await acknowledgement from dapp
+      const session = await acknowledged()
+
+      setSessionTopic(sessionTopic.concat([session.topic]))
     })
   }
 
