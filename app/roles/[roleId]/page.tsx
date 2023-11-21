@@ -1,25 +1,27 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { usePublicClient } from "wagmi"
 
-import OpenRD from "@/lib/OpenR&D"
+import { getHat } from "@/lib/backend"
+import { HatData } from "@/lib/types"
+import { ViewOrganization } from "@/components/web3/view-organization"
 
-export default function RolePage({ params }: { params: { roleId: bigint } }) {
-  const publicClient = usePublicClient()
-  const [hatInfo, setHatInfo] = useState<{ name: string }>({
+export default function RolePage({ params }: { params: { roleId: string } }) {
+  const [hatInfo, setHatInfo] = useState<HatData>({
     name: "Loading...",
+    description: "Loading...",
+    image: "ipfs://bafkreiflezpk3kjz6zsv23pbvowtatnd5hmqfkdro33x5mh2azlhne3ah4",
+    sharedaddress: [],
   })
 
   useEffect(() => {
     const fetch = async () => {
-      const hatInfo = await publicClient.readContract({
-        abi: OpenRD.contracts.Hats.abi,
-        address: OpenRD.contracts.Hats.address,
-        functionName: "viewHat",
-        args: [params.roleId],
-      })
-      setHatInfo({ name: hatInfo[0] })
+      if (!params.roleId) {
+        return
+      }
+
+      const hatInfo = await getHat(params.roleId)
+      setHatInfo(hatInfo)
     }
 
     fetch().catch(console.error)
@@ -31,8 +33,14 @@ export default function RolePage({ params }: { params: { roleId: bigint } }) {
         {hatInfo.name} (#{params.roleId.toString()})
       </h1>
       <p className="max-w-[700px] text-lg text-muted-foreground">
-        {"In the future you'll be able to add a description here!"}
+        {hatInfo.description}
       </p>
+      {hatInfo.sharedaddress.map((s) => (
+        <a>
+          Access {s.access.functionSelector ?? "any"} at{" "}
+          {s.access.zone ?? "any"} as <ViewOrganization organization={s.dao} />
+        </a>
+      ))}
     </section>
   )
 }

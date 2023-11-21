@@ -21,32 +21,75 @@ export function WalletConnectSigner() {
   const [signClient, setSignClient] = useState<SignClientType | undefined>()
   const [sessionTopic, setSessionTopic] = useState<string[]>([])
 
-  const getNamespaces = () => {
-    return {
-      eip155: {
-        accounts: accounts,
-        chains: [`eip155:${OpenRD.chainId}`],
-        methods: [
-          "eth_sendTransaction",
-          "personal_sign",
-          "eth_signTypedData",
-          "eth_signTypedData_v4",
-        ],
-        events: ["chainChanged", "accountsChanged"],
-      },
-    }
-  }
-
   const setSessionProposalHandler = (signClient: SignClientType) => {
     signClient.on("session_proposal", async (event) => {
       console.log("session_proposal", event)
+      const UNSUPPORTED_CHAINS = 5100
+
+      let trySwitchToChain: string | undefined
+      const wantToConnectAsChains =
+        event.params.requiredNamespaces?.eip155?.chains
+      if (wantToConnectAsChains) {
+        if (!wantToConnectAsChains.includes(`eip155:${OpenRD.chainId}`)) {
+          if (!wantToConnectAsChains.includes("eip155:1")) {
+            await signClient.reject({
+              id: event.id,
+              reason: {
+                code: UNSUPPORTED_CHAINS,
+                message: "Only Polygon is supported currently.",
+              },
+            })
+          }
+
+          trySwitchToChain = `eip155:${OpenRD.chainId}`
+        }
+      }
+
       const { acknowledged } = await signClient.approve({
         id: event.id,
-        namespaces: getNamespaces(),
+        namespaces: {
+          eip155: {
+            accounts: accounts.concat(
+              "eip155:1:0x0000000000000000000000000000000000000000"
+            ),
+            chains: ["eip155:1", `eip155:${OpenRD.chainId}`],
+            methods: [
+              "eth_sendTransaction",
+              "personal_sign",
+              "eth_signTypedData",
+              "eth_signTypedData_v4",
+            ],
+            events: ["chainChanged", "accountsChanged"],
+          },
+        },
       })
 
       // Optionally await acknowledgement from dapp
       const session = await acknowledged()
+
+      if (trySwitchToChain) {
+        try {
+          await signClient.emit({
+            topic: session.topic,
+            event: {
+              name: "chainChanged",
+              data: `eip155:${OpenRD.chainId}`,
+            },
+            chainId: `eip155:${OpenRD.chainId}`,
+          })
+        } catch (err) {
+          console.log("Couldnt switch to supported chain")
+
+          await signClient.disconnect({
+            topic: session.topic,
+            reason: {
+              code: UNSUPPORTED_CHAINS,
+              message: "Only Polygon is supported currently.",
+            },
+          })
+          return
+        }
+      }
 
       setSessionTopic(sessionTopic.concat([session.topic]))
     })
