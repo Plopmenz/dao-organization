@@ -25,9 +25,9 @@ import {
 
 async function start() {
   const httpRPC =
-    "https://polygon-mumbai.g.alchemy.com/v2/iRRdBU4koK5yTH9tmRNnTFLvKOq8T-ou"
+    "https://polygon-mainnet.infura.io/v3/b13eca0fcada4ed9b5e0ef5b940b9de5"
   const websocketRPC =
-    "wss://polygon-mumbai.g.alchemy.com/v2/iRRdBU4koK5yTH9tmRNnTFLvKOq8T-ou"
+    "wss://polygon-mainnet.infura.io/ws/v3/b13eca0fcada4ed9b5e0ef5b940b9de5"
 
   const client = createPublicClient({
     chain: {
@@ -113,7 +113,7 @@ async function start() {
       subDAOAdded()
     },
   }
-  repos["0x0DF9b15550fF39149e491dDD154b28f587e0cD16"] = {
+  repos[OpenRD["admin-repo"].address] = {
     process: (dao, plugin, data) => {
       const admin = normalizeAddress(
         decodeAbiParameters([{ type: "address", name: "admin" }], data)[0]
@@ -230,7 +230,7 @@ async function start() {
   function startWatchingDaos() {
     return client.watchContractEvent({
       ...watchEventOverrides,
-      abi: OpenRD.contracts.community_dao.abi,
+      abi: [parseAbiItem("event MetadataSet(bytes metadata)")],
       address: Object.keys(daos) as Address[],
       eventName: "MetadataSet",
       onLogs: processDAOMetadataLog,

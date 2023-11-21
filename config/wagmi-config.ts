@@ -3,15 +3,15 @@
 import "@rainbow-me/rainbowkit/styles.css"
 
 import { connectorsForWallets, getDefaultWallets } from "@rainbow-me/rainbowkit"
-import { polygonMumbai } from "viem/chains"
+import { polygon } from "viem/chains"
 import { configureChains, createConfig } from "wagmi"
-import { alchemyProvider } from "wagmi/providers/alchemy"
+import { infuraProvider } from "wagmi/providers/infura"
 import { publicProvider } from "wagmi/providers/public"
 
 const { chains, publicClient } = configureChains(
-  [polygonMumbai],
+  [polygon],
   [
-    alchemyProvider({ apiKey: "iRRdBU4koK5yTH9tmRNnTFLvKOq8T-ou" }),
+    infuraProvider({ apiKey: "b13eca0fcada4ed9b5e0ef5b940b9de5" }),
     publicProvider(),
   ]
 )

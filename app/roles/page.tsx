@@ -1,8 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-import { CreateRole } from "@/components/web3/create-role"
 import { ViewRoles } from "@/components/web3/view-roles"
 
 export default function AllRolesPage() {
@@ -14,7 +14,10 @@ export default function AllRolesPage() {
         Roles
       </h1>
       <ViewRoles />
-      <CreateRole onCreate={(roleId) => router.push("/roles/" + roleId)} />
+      <Link href="https://app.hatsprotocol.xyz/" target="_blank">
+        Manage Hats
+      </Link>
+      {/*<CreateRole onCreate={(roleId) => router.push("/roles/" + roleId)} />*/}
     </section>
   )
 }
