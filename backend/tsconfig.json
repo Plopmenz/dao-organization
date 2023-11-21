@@ -1,12 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2017",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "strict": false,
+    "strict": true,
     "strictNullChecks": true,
     "esModuleInterop": true
   },
   "exclude": ["node_modules"],
-  "include": ["../lib/types.ts", "../lib/OpenR&D.ts", "../lib/ipfs.ts"]
+  "include": [
+    "../lib/types.ts",
+    "../lib/OpenR&D.ts",
+    "../lib/ipfs.ts",
+    "main.ts"
+  ]
 }
