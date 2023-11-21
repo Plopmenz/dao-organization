@@ -86,7 +86,7 @@ export function useAbstractTransaction({
         value = BigInt(0) // or let the user pay?
         functionName = "executeProposal"
         address = method.governance
-        abi = OpenRD.AdminImplementation.abi
+        abi = OpenRD.contracts.AdminImplementation.abi
       }
 
       method = method.continue
@@ -135,7 +135,7 @@ export function abstractTransaction(
         to: method.governance,
         value: BigInt(0), // or let the user pay?
         data: encodeFunctionData({
-          abi: OpenRD.AdminImplementation.abi,
+          abi: OpenRD.contracts.AdminImplementation.abi,
           functionName: "executeProposal",
           args: ["0x", [transaction], BigInt(0)],
         }),

@@ -113,7 +113,7 @@ async function start() {
       subDAOAdded()
     },
   }
-  repos[OpenRD.AdminRepo.address] = {
+  repos[OpenRD.contracts.AdminRepo.address] = {
     process: (dao, plugin, data) => {
       const admin = normalizeAddress(
         decodeAbiParameters([{ type: "address", name: "admin" }], data)[0]
