@@ -414,25 +414,27 @@ async function start() {
           args: { id, details, imageURI },
         } = logs[0]
 
-        if (!id || !details || !imageURI) {
+        if (!id) {
           return
         }
 
         try {
           // {"type":"1.0","data":{"name":"Topmenz","description":"Plopmenz Hats!"}} (ipfs://bafkreiemn7ptxyqdhnqyshp23sx5wdti6xeqylmbido7ewlug7d62apddy)
-          const metadata = (await getFromIpfs(
-            details.replace("ipfs://", "")
-          )) as {
-            type?: string
-            data?: {
-              name?: string
-              description?: string
-            }
-          }
+          const metadata = details
+            ? ((await getFromIpfs(details.replace("ipfs://", ""))) as {
+                type?: string
+                data?: {
+                  name?: string
+                  description?: string
+                }
+              })
+            : {}
           hats[id.toString()] = {
             name: metadata.data?.name ?? "Unnamed",
             description: metadata.data?.description ?? "Undescripted",
-            image: imageURI,
+            image:
+              imageURI ??
+              "ipfs://bafkreiflezpk3kjz6zsv23pbvowtatnd5hmqfkdro33x5mh2azlhne3ah4",
             sharedaddress: [],
           }
           saveHats()
@@ -479,6 +481,11 @@ async function start() {
               description?: string
             }
           }
+
+          if (!hats[hatId.toString()]) {
+            console.warn("Missed initial hat creation event", hatId)
+            return
+          }
           hats[hatId.toString()].name = metadata.data?.name ?? "Unnamed"
           hats[hatId.toString()].description =
             metadata.data?.description ?? "Undescripted"
@@ -516,6 +523,10 @@ async function start() {
           return
         }
 
+        if (!hats[hatId.toString()]) {
+          console.warn("Missed initial hat creation event", hatId)
+          return
+        }
         hats[hatId.toString()].image = newImageURI
         saveHats()
         console.log("Hat", hatId, "updated its image to", newImageURI)

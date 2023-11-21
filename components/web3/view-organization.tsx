@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Address } from "viem"
-import { usePublicClient } from "wagmi"
 
 import { getDAO } from "@/lib/backend"
 import { DAOMetadata } from "@/lib/types"

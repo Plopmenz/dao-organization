@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { usePublicClient } from "wagmi"
 
 import { useAbstractAddress } from "@/lib/AbstractTransaction"
 import { getUser } from "@/lib/backend"

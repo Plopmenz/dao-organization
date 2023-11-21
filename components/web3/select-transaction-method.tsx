@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AxiosError } from "axios"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { useAccount } from "wagmi"
 
