@@ -41,7 +41,7 @@ export function getSubDAOSettings() {
 }
 
 export function getAdminSettings(admin: Address) {
-  const adminRepo = OpenRD["admin-repo"].address
+  const adminRepo = OpenRD.AdminRepo.address
   const adminFormat = [{ type: "address", name: "admin" }] as const
   const adminValues = [admin] as const
   const adminBytes = encodeAbiParameters(adminFormat, adminValues)

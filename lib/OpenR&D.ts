@@ -8529,7 +8529,7 @@ export default {
       ],
     },
   },
-  "admin-repo": {
+  AdminRepo: {
     address: "0x7fF570473d0876db16A59e8F04EE7F17Ab117309",
   },
   AdminImplementation: {
