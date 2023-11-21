@@ -71,20 +71,20 @@ export function WalletConnectSigner() {
           )
         }
 
-        const args = event.params.request.params[0]
-        const signer = await getWalletClient({
-          chainId: Number(OpenRD.chainId),
-        })
-        const transactionRaw = {
-          to: args.to,
-          value: args.value,
-          data: args.data,
-        }
-        const transactionData = abstractTransaction(
-          transactionMethod,
-          transactionRaw
-        )
         try {
+          const args = event.params.request.params[0]
+          const signer = await getWalletClient({
+            chainId: Number(OpenRD.chainId),
+          })
+          const transactionRaw = {
+            to: args.to,
+            value: args.value ?? BigInt(0),
+            data: args.data ?? "0x00",
+          }
+          const transactionData = abstractTransaction(
+            transactionMethod,
+            transactionRaw
+          )
           const result = await signer?.sendTransaction({
             ...transactionData,
             // Gas is increased if we do not use the EOA directly
