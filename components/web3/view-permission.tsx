@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { usePublicClient } from "wagmi"
 
 import { getHat } from "@/lib/backend"
@@ -20,12 +21,14 @@ export function ViewPermission({ permission }: { permission: Permission }) {
     fetch().catch(console.error)
   }, [permission.hat])
 
-  const zone = permission.zone ?? "Any"
-  const functionSelector = permission.functionSelector ?? "Any"
+  const zone = permission.zone ?? "any"
+  const functionSelector = permission.functionSelector ?? "any"
 
   return (
     <div>
-      {hatInfo.name}: Invoke {functionSelector} at {zone}
+      <Link href={"/roles/" + permission.hat}>
+        {hatInfo.name}: Invoke {functionSelector} at {zone}
+      </Link>
     </div>
   )
 }

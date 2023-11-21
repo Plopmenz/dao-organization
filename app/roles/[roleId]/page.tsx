@@ -36,10 +36,11 @@ export default function RolePage({ params }: { params: { roleId: string } }) {
         {hatInfo.description}
       </p>
       {hatInfo.sharedaddress.map((s) => (
-        <a>
-          Access {s.access.functionSelector ?? "any"} at{" "}
+        <div>
+          Invoke {s.access.functionSelector ?? "any"} at{" "}
           {s.access.zone ?? "any"} as <ViewOrganization organization={s.dao} />
-        </a>
+          <br />
+        </div>
       ))}
     </section>
   )
