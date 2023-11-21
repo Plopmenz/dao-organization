@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { Address } from "viem"
-import { usePublicClient } from "wagmi"
 
 import { getSharedAddress } from "@/lib/backend"
 import { Permission } from "@/lib/types"
@@ -13,8 +12,6 @@ export function SharedAddressDashboard({
 }: {
   sharedAddress: Address | undefined
 }) {
-  const publicClient = usePublicClient()
-
   const [permissions, setPermissions] = useState<Permission[]>()
   useEffect(() => {
     const fetch = async () => {

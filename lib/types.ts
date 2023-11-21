@@ -43,5 +43,7 @@ export interface UserData {
 
 export interface HatData {
   name: string
+  description: string
+  image: string
   sharedaddress: { dao: Address; plugin: Address; access: PermissionAccess }[] // Use Set instead? (object does reference compare tho)
 }

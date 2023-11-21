@@ -221,11 +221,15 @@ async function start() {
       return
     }
 
-    const hash = hexToString(metadata)
-    const data = await getFromIpfs(hash)
-    daos[address].metadata = data
-    saveDaos()
-    console.log("DAO", address, "updated it's metadata to", data)
+    try {
+      const hash = hexToString(metadata)
+      const data = await getFromIpfs(hash)
+      daos[address].metadata = data
+      saveDaos()
+      console.log("DAO", address, "updated it's metadata to", data)
+    } catch (err) {
+      console.error("Error fetching dao metadata", err)
+    }
   }
   function startWatchingDaos() {
     return client.watchContractEvent({
@@ -356,6 +360,30 @@ async function start() {
       onLogs: (logs) => {
         const { args, eventName, address } = logs[0]
         console.log("SubDAO at", address, "triggered", eventName)
+
+        const typedArgs = args as {
+          subdao?: Address
+        }
+        if (!typedArgs.subdao) {
+          return
+        }
+
+        if (eventName === "SubDAOAdded") {
+          subDaos[address].subdaos.push(typedArgs.subdao)
+          saveSubDaos()
+          console.log("Subdao", address, "added", typedArgs.subdao)
+        } else if (eventName === "SubDAORemoved") {
+          const index = subDaos[address].subdaos.findIndex(
+            (d) => d === typedArgs.subdao
+          )
+          if (index === -1) {
+            console.warn("Was not able to find subdao to remove")
+          } else {
+            subDaos[address].subdaos.splice(index, 1)
+          }
+          saveSubDaos()
+          console.log("Subdao", address, "removed", typedArgs.subdao)
+        }
       },
       onError: (err) => {
         console.error("Watching sub dao error: ", err)
@@ -383,16 +411,35 @@ async function start() {
         }
 
         const {
-          args: { id, details },
+          args: { id, details, imageURI },
         } = logs[0]
 
-        if (!id || !details) {
+        if (!id || !details || !imageURI) {
           return
         }
 
-        hats[id.toString()] = { name: details, sharedaddress: [] }
-        saveHats()
-        console.log("New hat", details, "created with id", id)
+        try {
+          // {"type":"1.0","data":{"name":"Topmenz","description":"Plopmenz Hats!"}} (ipfs://bafkreiemn7ptxyqdhnqyshp23sx5wdti6xeqylmbido7ewlug7d62apddy)
+          const metadata = (await getFromIpfs(
+            details.replace("ipfs://", "")
+          )) as {
+            type?: string
+            data?: {
+              name?: string
+              description?: string
+            }
+          }
+          hats[id.toString()] = {
+            name: metadata.data?.name ?? "Unnamed",
+            description: metadata.data?.description ?? "Undescripted",
+            image: imageURI,
+            sharedaddress: [],
+          }
+          saveHats()
+          console.log("New hat", details, "created with id", id)
+        } catch (err) {
+          console.error("Error fetching hat metadata", err)
+        }
       },
       onError: (err) => {
         console.error("Watching hat creation error: ", err)
@@ -402,6 +449,85 @@ async function start() {
     })
   }
   let stopWatchingHatCreation = startWatchingHatCreation()
+
+  function startWatchingHatDetailsChanged() {
+    return client.watchContractEvent({
+      ...watchEventOverrides,
+      abi: OpenRD.contracts.Hats.abi,
+      address: OpenRD.contracts.Hats.address,
+      eventName: "HatDetailsChanged",
+      onLogs: async (logs) => {
+        if (!logs[0].args) {
+          return
+        }
+
+        const {
+          args: { hatId, newDetails },
+        } = logs[0]
+
+        if (!hatId || !newDetails) {
+          return
+        }
+
+        try {
+          const metadata = (await getFromIpfs(
+            newDetails.replace("ipfs://", "")
+          )) as {
+            type?: string
+            data?: {
+              name?: string
+              description?: string
+            }
+          }
+          hats[hatId.toString()].name = metadata.data?.name ?? "Unnamed"
+          hats[hatId.toString()].description =
+            metadata.data?.description ?? "Undescripted"
+          saveHats()
+          console.log("Hat", hatId, "updated its details to", newDetails)
+        } catch (err) {
+          console.error("Error fetching hat metadata on change", err)
+        }
+      },
+      onError: (err) => {
+        console.error("Watching hat details changed error: ", err)
+        stopWatchingHatDetailsChanged()
+        stopWatchingHatDetailsChanged = startWatchingHatDetailsChanged()
+      },
+    })
+  }
+  let stopWatchingHatDetailsChanged = startWatchingHatDetailsChanged()
+
+  function startWatchingHatImageChanged() {
+    return client.watchContractEvent({
+      ...watchEventOverrides,
+      abi: OpenRD.contracts.Hats.abi,
+      address: OpenRD.contracts.Hats.address,
+      eventName: "HatImageURIChanged",
+      onLogs: async (logs) => {
+        if (!logs[0].args) {
+          return
+        }
+
+        const {
+          args: { hatId, newImageURI },
+        } = logs[0]
+
+        if (!hatId || !newImageURI) {
+          return
+        }
+
+        hats[hatId.toString()].image = newImageURI
+        saveHats()
+        console.log("Hat", hatId, "updated its image to", newImageURI)
+      },
+      onError: (err) => {
+        console.error("Watching hat image changed error: ", err)
+        stopWatchingHatImageChanged()
+        stopWatchingHatImageChanged = startWatchingHatImageChanged()
+      },
+    })
+  }
+  let stopWatchingHatImageChanged = startWatchingHatImageChanged()
 
   function processHatTransfer(
     from: Address,
@@ -513,6 +639,8 @@ async function start() {
     stopWatchingSharedAddress()
     stopWatchingSubDAO()
     stopWatchingHatCreation()
+    stopWatchingHatDetailsChanged()
+    stopWatchingHatImageChanged()
     stopWatchingHatTransfers()
     stopWatchingHatBatchTransfers()
   }
