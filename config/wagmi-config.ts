@@ -3,13 +3,13 @@
 import "@rainbow-me/rainbowkit/styles.css"
 
 import { connectorsForWallets, getDefaultWallets } from "@rainbow-me/rainbowkit"
-import { polygon } from "viem/chains"
+import { mainnet, polygon } from "viem/chains"
 import { configureChains, createConfig } from "wagmi"
 import { infuraProvider } from "wagmi/providers/infura"
 import { publicProvider } from "wagmi/providers/public"
 
 const { chains, publicClient } = configureChains(
-  [polygon],
+  [mainnet, polygon],
   [
     infuraProvider({ apiKey: "b13eca0fcada4ed9b5e0ef5b940b9de5" }),
     publicProvider(),
@@ -29,3 +29,4 @@ export const config = createConfig({
 })
 
 export { chains }
+export const defaultChain = polygon

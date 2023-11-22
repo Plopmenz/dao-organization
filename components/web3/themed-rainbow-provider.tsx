@@ -7,7 +7,7 @@ import {
 } from "@rainbow-me/rainbowkit"
 import { useTheme } from "next-themes"
 
-import { chains } from "@/config/wagmi-config"
+import { chains, defaultChain } from "@/config/wagmi-config"
 
 export function ThemedRaindbowProvider({
   children,
@@ -19,6 +19,7 @@ export function ThemedRaindbowProvider({
   return (
     <RainbowKitProvider
       chains={chains}
+      initialChain={defaultChain}
       theme={resolvedTheme == "light" ? lightTheme() : darkTheme()}
     >
       {children}

@@ -17,7 +17,7 @@ export function SiteHeader() {
             <SelectTransactionMethod />
             <WalletConnectSigner />
             <ThemeToggle />
-            <ConnectButton />
+            <ConnectButton chainStatus="none" />
           </nav>
         </div>
       </div>
