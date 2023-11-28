@@ -656,6 +656,32 @@ async function start() {
     stopWatchingHatBatchTransfers()
   }
 
+  function relisten() {
+    // Could also be used for initial start, but have to declare the variable anyway (and initialize or give type signature)
+    stopWatchingPluginInstallation = startWatchingPluginInstallation()
+    stopWatchingDaos =
+      Object.keys(daos).length > 0 ? startWatchingDaos() : () => {}
+    stopWatchingSharedAddress =
+      Object.keys(sharedAddresses).length > 0
+        ? startWatchingSharedAddress()
+        : () => {}
+    stopWatchingSubDAO =
+      Object.keys(subDaos).length > 0 ? startWatchingSubDAO() : () => {}
+    stopWatchingHatCreation = startWatchingHatCreation()
+    stopWatchingHatDetailsChanged = startWatchingHatDetailsChanged()
+    stopWatchingHatImageChanged = startWatchingHatImageChanged()
+    stopWatchingHatTransfers = startWatchingHatTransfers()
+    stopWatchingHatBatchTransfers = startWatchingHatBatchTransfers()
+  }
+
+  function preventWebsocketTimeout() {
+    console.log("Letting the websocket know we are still there...")
+    stop()
+    relisten()
+    setTimeout(preventWebsocketTimeout, 60 * 60 * 1000) // 1h
+  }
+  setTimeout(preventWebsocketTimeout, 60 * 60 * 1000)
+
   process.on("SIGINT", function () {
     console.log("Stopping...")
 
