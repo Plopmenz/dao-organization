@@ -154,15 +154,21 @@ async function start() {
       createUserIfNotExists(dao)
 
       const setMetadata = async () => {
-        // Just start this and move on
-        const logs = await client.getLogs({
-          address: dao,
-          event: parseAbiItem("event MetadataSet(bytes metadata)"),
-          blockHash: blockHash,
-        })
-        await processDAOMetadataLog(logs)
-        console.log("New DAO discovered at", dao)
-        daoAdded()
+        try {
+          // Just start this and move on
+          const logs = await client.getLogs({
+            address: dao,
+            event: parseAbiItem("event MetadataSet(bytes metadata)"),
+            blockHash: blockHash,
+          })
+          await processDAOMetadataLog(logs)
+          console.log("New DAO discovered at", dao)
+          daoAdded()
+        } catch (err) {
+          // Likely block hasnt been indexed yet
+          console.error("Metadata fetch error", err)
+          setMetadata().catch(console.error)
+        }
       }
       setMetadata().catch(console.error)
     }
