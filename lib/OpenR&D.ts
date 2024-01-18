@@ -3,7 +3,7 @@ export default {
   chainId: "137",
   contracts: {
     DAOFactory: {
-      address: "0x51Ead12DEcD31ea75e1046EdFAda14dd639789b8",
+      address: "0x392f0FdfF3283b9f026CfFeC7f9c2De443af3E7C",
       abi: [
         {
           inputs: [
